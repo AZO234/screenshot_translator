@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment
+.venv/
+env/
+venv/
+.env
+
+# Project specific data
+input_screenshots/*.png
+!input_screenshots/screen_1.png
+kept_translations/keep*
+usage_stats.json
