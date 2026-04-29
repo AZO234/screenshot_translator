@@ -10,7 +10,17 @@ env/
 venv/
 .env
 
+# AI
+.claude/
+.gemini/
+.codex/
+AI.md
+CLAUDE.md
+GEMINI.md
+AGENTS.md
+
 # Project specific data
+tessdata/
 input_screenshots/*.png
 !input_screenshots/screen_1.png
 kept_translations/keep*

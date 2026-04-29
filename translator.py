@@ -11,8 +11,39 @@ import pytesseract
 load_dotenv()
 API_KEY = os.getenv("GOOGLE_API_KEY")
 
+# Tesseractの学習データを配置するディレクトリ (スクリプトからの相対パス)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+TESSDATA_DIR = os.path.join(SCRIPT_DIR, "tessdata")
+
 def get_api_key():
     return API_KEY
+
+def ensure_tessdata():
+    """
+    Tesseractの学習データ(eng_best, jpn_best)をローカルにダウンロードして配置する。
+    """
+    os.makedirs(TESSDATA_DIR, exist_ok=True)
+    
+    # tessdata_bestのリポジトリから取得
+    base_url = "https://github.com/tesseract-ocr/tessdata_best/raw/main/"
+    files = ["eng.traineddata", "jpn.traineddata"]
+    
+    for filename in files:
+        target_path = os.path.join(TESSDATA_DIR, filename)
+        if not os.path.exists(target_path):
+            print(f"Downloading {filename} to {target_path}...")
+            url = base_url + filename
+            try:
+                response = requests.get(url, stream=True)
+                response.raise_for_status()
+                with open(target_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                print(f"Successfully downloaded {filename}")
+            except Exception as e:
+                print(f"Failed to download {filename}: {e}")
+                if os.path.exists(target_path):
+                    os.remove(target_path)
 
 def get_font_from_path(font_path, size=24):
     if font_path and os.path.exists(font_path):
@@ -22,16 +53,19 @@ def get_font_from_path(font_path, size=24):
             pass
     return ImageFont.load_default()
 
-def detect_text_tesseract(image_content):
+def detect_text_tesseract(image_content, lang="jpn+eng"):
     """
     Tesseract OCR を使用してテキストを検出する。
-    段落単位でテキストをグループ化する。
+    lang: 使用する学習データ (例: "jpn+eng", "pc98")
     """
     import io
     img = Image.open(io.BytesIO(image_content))
     
+    # ローカルのtessdataを使用するように設定
+    config = f'--tessdata-dir "{TESSDATA_DIR}"'
+    
     # 段落情報を取得するために image_to_data を使用
-    data = pytesseract.image_to_data(img, lang="jpn+eng", output_type=pytesseract.Output.DICT)
+    data = pytesseract.image_to_data(img, lang=lang, config=config, output_type=pytesseract.Output.DICT)
     
     detections = []
     n_boxes = len(data['text'])
@@ -220,10 +254,11 @@ def merge_nearby_detections(detections, threshold=15):
             i += 1
     return detections
 
-def translate_image(image_path, font_path=None, rois=None, target_lang="ja", engine="google"):
+def translate_image(image_path, font_path=None, rois=None, target_lang="ja", engine="tesseract", ocr_lang="jpn+eng"):
     """
     OCRエンジンを選択して画像を翻訳する。
     engine: "google" or "tesseract"
+    ocr_lang: Tesseract用の言語指定
     """
     try:
         orig_img = Image.open(image_path).convert("RGBA")
@@ -235,7 +270,7 @@ def translate_image(image_path, font_path=None, rois=None, target_lang="ja", eng
         # 1. OCRの実行
         def run_ocr(content):
             if engine == "tesseract":
-                return detect_text_tesseract(content)
+                return detect_text_tesseract(content, lang=ocr_lang)
             else:
                 return detect_text_api(content)
 

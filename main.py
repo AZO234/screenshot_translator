@@ -1,5 +1,6 @@
 import os
 import subprocess
+import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import customtkinter as ctk
@@ -7,6 +8,7 @@ from PIL import Image, ImageTk, ImageDraw
 from datetime import datetime
 import json
 import glob
+import platform
 
 # 自作モジュール
 import image_manager
@@ -19,6 +21,9 @@ class CyclicTranslatorApp(ctk.CTk):
 
         self.title("Translator Image Focus Viewer & Library")
         self.geometry("1200x1000")
+
+        # Tesseract学習データの準備 (バックグラウンドで実行)
+        threading.Thread(target=translator.ensure_tessdata, daemon=True).start()
 
         # 状態管理
         self.screenshot_dir = os.path.abspath("input_screenshots")
@@ -46,11 +51,30 @@ class CyclicTranslatorApp(ctk.CTk):
         # 言語設定 (ISO 639-1)
         self.available_langs = ["ja", "en", "es", "zh", "tw", "ru", "ko", "fr", "de", "it", "pt", "vi", "th"]
         self.selected_lang_code = "ja"
-        self.selected_ocr_engine = "google"
+        self.selected_ocr_engine = "tesseract"
+        self.selected_tess_model = "jpn+eng"
 
         # フォント設定
         self.fonts_dict = self.get_available_fonts()
-        self.selected_font_path = next(iter(self.fonts_dict.values())) if self.fonts_dict else None
+        
+        # Noto Sans CJK JP を優先的にデフォルトにする
+        self.default_font_name = "Default"
+        self.selected_font_path = None
+        
+        priority_fonts = ["Noto Sans CJK JP", "Noto Serif CJK JP", "Noto Sans JP", "Noto Serif JP"]
+        for pf in priority_fonts:
+            if pf in self.fonts_dict:
+                self.default_font_name = pf
+                self.selected_font_path = self.fonts_dict[pf]
+                break
+        
+        if self.default_font_name == "Default" and len(self.fonts_dict) > 1:
+            # 優先フォントがない場合は "Default" 以外の最初のフォントを選択
+            for name, path in self.fonts_dict.items():
+                if name != "Default":
+                    self.default_font_name = name
+                    self.selected_font_path = path
+                    break
         
         self.setup_ui()
         self.update_usage_display()
@@ -58,14 +82,60 @@ class CyclicTranslatorApp(ctk.CTk):
 
     def get_available_fonts(self):
         fonts = {"Default": None}
-        try:
-            output = subprocess.check_output(["fc-list", ":lang=ja", "family", "file"], text=True)
-            for line in output.splitlines():
-                if ":" in line:
-                    path, name = line.split(":", 1)
-                    family = name.split(",")[0].strip()
-                    fonts[family] = path.strip()
-        except: pass
+        system = platform.system()
+        
+        if system in ["Linux", "Darwin"]:
+            # Linux と macOS で fc-list が使えるか試す
+            try:
+                output = subprocess.check_output(["fc-list", ":lang=ja", "family", "file"], text=True)
+                for line in output.splitlines():
+                    if ":" in line:
+                        path, name = line.split(":", 1)
+                        family = name.split(",")[0].strip()
+                        fonts[family] = path.strip()
+            except:
+                pass
+            
+            # macOS で fc-list が失敗した場合のフォールバック
+            if system == "Darwin" and len(fonts) <= 1:
+                mac_font_dirs = ["/System/Library/Fonts", "/Library/Fonts", os.path.expanduser("~/Library/Fonts")]
+                common_mac_fonts = {
+                    "Hiragino Sans": "Hiragino Sans GB.ttc",
+                    "Hiragino Kaku Gothic": "ヒラギノ角ゴシック W3.ttc",
+                    "Hiragino Mincho ProN": "ヒラギノ明朝 ProN.ttc",
+                    "AppleGothic": "AppleGothic.ttf"
+                }
+                for d in mac_font_dirs:
+                    if not os.path.exists(d): continue
+                    for name, filename in common_mac_fonts.items():
+                        path = os.path.join(d, filename)
+                        if os.path.exists(path):
+                            fonts[name] = path
+
+        elif system == "Windows":
+            # Windowsの標準フォントディレクトリから日本語っぽいのを探す
+            font_dir = os.path.join(os.environ.get("SystemRoot", "C:\\Windows"), "Fonts")
+            # 代表的な日本語フォントファイル名のマッピング
+            common_ja_fonts = {
+                "MS Gothic": "msgothic.ttc",
+                "MS PGothic": "msgothic.ttc",
+                "MS UI Gothic": "msgothic.ttc",
+                "Meiryo": "meiryo.ttc",
+                "Yu Gothic": "yugothic.ttf",
+                "Yu Gothic UI": "YuGothM.ttc"
+            }
+            for name, filename in common_ja_fonts.items():
+                path = os.path.join(font_dir, filename)
+                if os.path.exists(path):
+                    fonts[name] = path
+            
+            # ディレクトリ内をスキャンして .ttc や .ttf を追加（簡易的）
+            if os.path.exists(font_dir):
+                for f in os.listdir(font_dir):
+                    if f.lower().endswith((".ttc", ".ttf")) and "noto" in f.lower():
+                        name = f.split(".")[0]
+                        fonts[name] = os.path.join(font_dir, f)
+        
         return fonts
 
     def setup_ui(self):
@@ -132,8 +202,7 @@ class CyclicTranslatorApp(ctk.CTk):
 
         # フォント
         ctk.CTkLabel(settings_frame, text="Font:").pack(side="left", padx=(10, 5))
-        def_font = list(self.fonts_dict.keys())[0] if self.fonts_dict else "Default"
-        self.font_button = ctk.CTkButton(settings_frame, text=def_font, command=self.show_font_menu, width=120)
+        self.font_button = ctk.CTkButton(settings_frame, text=self.default_font_name, command=self.show_font_menu, width=120)
         self.font_button.pack(side="left", padx=5)
         self.font_popup = tk.Menu(self, tearoff=0)
         for name in self.fonts_dict.keys(): self.font_popup.add_command(label=name, command=lambda n=name: self.change_font(n))
@@ -147,6 +216,13 @@ class CyclicTranslatorApp(ctk.CTk):
                                              command=self.change_ocr_engine)
         self.ocr_seg.set("google")
         self.ocr_seg.pack(side="left", padx=5)
+
+        # Tesseractモデル選択
+        self.tess_model_button = ctk.CTkButton(settings_frame, text="jpn+eng", command=self.show_tess_model_menu, width=80)
+        # 初期状態では非表示にする（OCRがtesseractの時だけ意味があるため）
+        # self.tess_model_button.pack(side="left", padx=5) # あとでchange_ocr_engineで制御
+        
+        self.tess_model_popup = tk.Menu(self, tearoff=0)
         
         self.btn_keep = ctk.CTkButton(settings_frame, text="Keep This", command=self.keep_current, fg_color="#1f538d")
         self.btn_keep.pack(side="right", padx=10)
@@ -192,6 +268,61 @@ class CyclicTranslatorApp(ctk.CTk):
 
     def change_ocr_engine(self, engine):
         self.selected_ocr_engine = engine
+        if engine == "tesseract":
+            self.tess_model_button.pack(side="left", padx=5, after=self.ocr_seg)
+        else:
+            self.tess_model_button.pack_forget()
+
+    def show_tess_model_menu(self):
+        """tessdataディレクトリ内のモデルをチェックボックスで選択できるポップアップを表示する"""
+        popup = ctk.CTkToplevel(self)
+        popup.title("Select OCR Models")
+        popup.geometry("300x400")
+        popup.attributes("-topmost", True)
+        
+        # モデル一覧の取得
+        models = ["jpn", "eng"]
+        tessdata_dir = translator.TESSDATA_DIR
+        if os.path.exists(tessdata_dir):
+            for f in os.listdir(tessdata_dir):
+                if f.endswith(".traineddata"):
+                    m = f.replace(".traineddata", "")
+                    if m not in models:
+                        models.append(m)
+        
+        current_selected = self.selected_tess_model.split("+")
+        
+        ctk.CTkLabel(popup, text="Select Models (Multi)", font=("", 14, "bold")).pack(pady=10)
+        
+        scroll = ctk.CTkScrollableFrame(popup)
+        scroll.pack(expand=True, fill="both", padx=10, pady=5)
+        
+        checkboxes = {}
+        for m in models:
+            var = tk.BooleanVar(value=(m in current_selected))
+            cb = ctk.CTkCheckBox(scroll, text=m, variable=var)
+            cb.pack(anchor="w", pady=2)
+            checkboxes[m] = var
+            
+        def apply_selection():
+            selected = [m for m, var in checkboxes.items() if var.get()]
+            if not selected:
+                selected = ["jpn"] # デフォルト
+            new_model_str = "+".join(selected)
+            self.selected_tess_model = new_model_str
+            self.tess_model_button.configure(text=new_model_str)
+            popup.destroy()
+            if self.current_data and self.selected_ocr_engine == "tesseract":
+                self.run_translation()
+                
+        ctk.CTkButton(popup, text="Apply", command=apply_selection).pack(pady=10)
+
+    def change_tess_model(self, model_name):
+        # このメソッドは互換性のために残すか、削除しても良い（現在は show_tess_model_menu 内で完結）
+        self.selected_tess_model = model_name
+        self.tess_model_button.configure(text=model_name)
+        if self.current_data and self.selected_ocr_engine == "tesseract":
+            self.run_translation()
 
     def run_translation(self):
         self.btn_translate.configure(state="disabled", text="Calling API...")
@@ -204,7 +335,8 @@ class CyclicTranslatorApp(ctk.CTk):
                 active_rois = [r["coords"] for r in self.rois if r["active"].get() and r["coords"]]
                 trans_img, meta = translator.translate_image(latest_path, font_path=self.selected_font_path, 
                                                            rois=active_rois, target_lang=self.selected_lang_code,
-                                                           engine=self.selected_ocr_engine)
+                                                           engine=self.selected_ocr_engine,
+                                                           ocr_lang=self.selected_tess_model)
                 self.current_data = (trans_img, orig_img, meta)
                 self.last_action = "translate"
                 self.render_translate_image()
@@ -242,7 +374,8 @@ class CyclicTranslatorApp(ctk.CTk):
         try:
             o.save(os.path.join(self.keep_dir, f"{base}_orig.png"))
             data = {"timestamp": timestamp, "font": self.font_button.cget("text"), 
-                    "original_file": f"{base}_orig.png", "type": self.last_action, "lang": self.selected_lang_code}
+                    "original_file": f"{base}_orig.png", "type": self.last_action, "lang": self.selected_lang_code,
+                    "ocr_engine": self.selected_ocr_engine, "tess_model": self.selected_tess_model}
             if self.last_action == "translate":
                 t.save(os.path.join(self.keep_dir, f"{base}_trans.png"))
                 data["translated_file"] = f"{base}_trans.png"
@@ -308,7 +441,14 @@ class CyclicTranslatorApp(ctk.CTk):
             trans = Image.open(os.path.join(self.keep_dir, data["translated_file"])).convert("RGB") if data.get("translated_file") else None
             self.selected_lib_data = (trans, orig, data)
             self.meta_text.delete("1.0", "end")
-            self.meta_text.insert("end", f"Type: {data.get('type')}\nLang: {data.get('lang')}\nFont: {data.get('font')}\n\n")
+            meta_info = f"Type: {data.get('type')}\nLang: {data.get('lang')}\nFont: {data.get('font')}\n"
+            if data.get("ocr_engine"):
+                meta_info += f"OCR: {data.get('ocr_engine')}"
+                if data.get("ocr_engine") == "tesseract" and data.get("tess_model"):
+                    meta_info += f" ({data.get('tess_model')})"
+                meta_info += "\n"
+            meta_info += "\n"
+            self.meta_text.insert("end", meta_info)
             for i, b in enumerate(data.get("blocks", [])):
                 self.meta_text.insert("end", f"[{i+1}] {b['original']}\n    -> {b['translated']}\n\n")
             self.render_library_image()

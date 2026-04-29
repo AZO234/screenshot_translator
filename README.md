@@ -6,7 +6,8 @@ This application captures screenshots from emulators (such as NP2kai) that have 
 
 ## Environment
 
-- Python3 + Pip
+- Visual Studio 2026 (C++)
+- Python 3.12 + Pip
 - [Tesseract](https://github.com/tesseract-ocr/tesseract)
 - Google Vision AI API
 - Google Cloud Translation API
@@ -17,15 +18,64 @@ This application captures screenshots from emulators (such as NP2kai) that have 
 
 Ensure that the Tesseract command can be executed.
 
-``` bash
-sudo apt install tesseract-ocr tesseract-ocr-jpn
+#### Windows
+
+- **Python**
+
+Disable Python aliases using PowerShell with Administrator privileges:
+
+```powershell
+Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe" -Force
+Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python3.exe" -Force
 ```
+
+Add `C:\Python312` to your environment's PATH.
+
+- **vcpkg**
+
+```powershell
+git clone https://github.com/microsoft/vcpkg.git
+cd vcpkg
+.\bootstrap-vcpkg.bat
+```
+
+- **Tesseract**
+
+```powershell
+.\vcpkg.exe install tesseract:x64-windows
+```
+
+Add `C:\vcpkg\packages\tesseract_x64-windows\tools\tesseract` to your environment's PATH.
+
+#### POSIX (Linux/macOS)
+
+```bash
+$ sudo apt install tesseract-ocr
+```
+
+*Note: Training data (`eng.traineddata`, `jpn.traineddata`) will be automatically downloaded to the `tessdata/` directory when the app starts.*
+
+#### Using Custom Training Data
+
+If you want to use [custom training data (e.g., for PC-98 fonts)](https://github.com/AZO234/retro_tessdata), place the `.traineddata` files (unzip if necessary) into the `tessdata/` directory in the project root. These will be selectable from the app's UI.
 
 ### Screenshot Translator - Part 1
 
 Clone the repository and install the dependencies.
 
-``` bash
+#### Windows
+
+```powershell
+git clone https://github.com/AZO234/screenshot_translator.git
+cd screenshot_translator
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+#### POSIX
+
+```bash
 $ git clone https://github.com/AZO234/screenshot_translator.git
 $ cd screenshot_translator
 $ python -m venv .venv
@@ -33,7 +83,7 @@ $ source .venv/bin/activate
 $ pip install -r requirements.txt
 ```
 
-### Google API
+### Google API (Optional, for higher accuracy)
 
 - **Vision AI API**
 
@@ -66,7 +116,7 @@ Configure your emulator's periodic screenshot settings to save screenshots to:
 ### Screenshot Translator - Part 2
 
 Launch Screenshot Translator.
-``` bash
+```bash
 $ python main.py
 ```
 
@@ -98,9 +148,9 @@ Resets on the 1st of every month.
 Setting 5 ROIs will consume 5 units per OCR operation.  
 OCR of the entire image consumes 1 unit.
 
-Tesseract is free to use but generally less accurate than Google Vision AI.
-
 Screenshot Translator tracks usage for each API key.
+
+Tesseract is free to use but standard dictionaries may have lower accuracy compared to Google Vision AI.
 
 ## License
 
