@@ -2,7 +2,9 @@
 
 <img src="images/translate.png">
 
-This application captures screenshots from emulators (such as NP2kai) that have periodic screenshot output features. It performs OCR using Google Vision AI API or Tesseract and translates the text using Google Cloud Translation API.
+[日本語はこちら (Japanese)](README_ja.md)
+
+This application captures screenshots from emulators (such as NP2kai) that have periodic screenshot output features, performs OCR using Google Vision AI API or Tesseract, and translates the text using Google Cloud Translation API.
 
 ## Environment
 
@@ -29,7 +31,7 @@ Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe" -Force
 Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python3.exe" -Force
 ```
 
-Add `C:\Python312` to your environment's PATH.
+Add `C:\Python312` to your system's PATH environment variable.
 
 - **vcpkg**
 
@@ -45,15 +47,15 @@ cd vcpkg
 .\vcpkg.exe install tesseract:x64-windows
 ```
 
-Add `C:\vcpkg\packages\tesseract_x64-windows\tools\tesseract` to your environment's PATH.
+Add `C:\vcpkg\packages\tesseract_x64-windows\tools\tesseract` to your system's PATH environment variable.
 
-#### POSIX (Linux/macOS)
+#### POSIX
 
 ```bash
 $ sudo apt install tesseract-ocr
 ```
 
-*Note: Training data (`eng.traineddata`, `jpn.traineddata`) will be automatically downloaded to the `tessdata/` directory when the app starts.*
+*Note: Standard training data (`eng.traineddata`, `jpn.traineddata`) will be automatically downloaded to the `tessdata/` directory when the app starts.*
 
 #### Using Custom Training Data
 
@@ -88,7 +90,7 @@ $ pip install -r requirements.txt
 - **Vision AI API**
 
 Go to [Vision AI API](https://console.cloud.google.com/marketplace/product/google/visionai.googleapis.com) and click **Enable**.
-(You will need to provide billing information, even for the free tier.)
+(Note: You will need to provide billing information, even for the free tier.)
 
 - **Cloud Translation API**
 
@@ -105,7 +107,7 @@ Copy the API key string (starts with `AIza...`).
 
 - **Register API Key in Screenshot Translator**
 
-Copy the `.env.example` file to `.env`.  
+Duplicate the `.env.example` file as `.env`.  
 Paste your API key string into the `GOOGLE_API_KEY="AIza..."` field in the `.env` file.
 
 ### Emulator Setup
@@ -125,11 +127,11 @@ First, click **Capture only** to verify that the screenshot is being displayed c
 Set the target language in **Lang** and select the font to use in **Font**.  
 While a screenshot containing text is displayed, click **Translate**.
 
-If successful, the translation will be overlaid on the image, consuming your Google API free tier quota.
+The translation will be overlaid on the image, consuming your Google API free tier quota.
 
 You can save successful screenshots and translation data by clicking **Keep This**.
 
-## OCR & Translation Region Selection
+## OCR & Translation Region Selection (ROI)
 
 You can set up to 5 Regions of Interest (ROI) to perform OCR and translation on specific parts of the image.
 
@@ -141,16 +143,16 @@ You can browse saved translation information in the Library.
 
 ## About API Free Tier
 
-- **Vision AI API**: Up to 1,000 units per month.
+- **Vision AI API**: Up to 1,000 samples per month.
 - **Cloud Translation API**: Up to 100,000 characters per month.
-Resets on the 1st of every month.
+Quotas reset on the 1st of every month.
 
-Setting 5 ROIs will consume 5 units per OCR operation.  
-OCR of the entire image consumes 1 unit.
+Setting 5 ROIs will consume 5 samples per OCR operation.  
+OCR of the entire image consumes 1 sample.
 
-Screenshot Translator tracks usage for each API key.
+Screenshot Translator tracks these consumption levels for each API key.
 
-Tesseract is free to use but standard dictionaries may have lower accuracy compared to Google Vision AI.
+Tesseract is free to use, but standard dictionaries may have lower accuracy compared to Google Vision AI.
 
 ## License
 

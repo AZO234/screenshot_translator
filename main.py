@@ -32,6 +32,7 @@ class CyclicTranslatorApp(ctk.CTk):
         
         self.show_overlay = True
         self.current_data = None # (Trans_PIL, Orig_PIL, Metadata)
+        self.selected_lib_data = None # (Trans_PIL, Orig_PIL, Metadata) for library view
         self.last_action = None # "translate" or "capture"
         
         # ROI (Rubber-band) 状態
