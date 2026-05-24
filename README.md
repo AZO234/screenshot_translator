@@ -9,7 +9,7 @@ This application captures screenshots from emulators (such as NP2kai) that have 
 ## Environment
 
 - Visual Studio 2026 (C++)
-- Python 3.12 + Pip
+- Python 3.13 + Pip
 - [Tesseract](https://github.com/tesseract-ocr/tesseract)
 - Google Vision AI API
 - Google Cloud Translation API
@@ -31,7 +31,7 @@ Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe" -Force
 Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python3.exe" -Force
 ```
 
-Add `C:\Python312` to your system's PATH environment variable.
+Add `C:\Python313` to your system's PATH environment variable.
 
 - **vcpkg**
 
@@ -52,7 +52,7 @@ Add `C:\vcpkg\packages\tesseract_x64-windows\tools\tesseract` to your system's P
 #### POSIX
 
 ```bash
-$ sudo apt install tesseract-ocr
+sudo apt install tesseract-ocr
 ```
 
 *Note: Standard training data (`eng.traineddata`, `jpn.traineddata`) will be automatically downloaded to the `tessdata/` directory when the app starts.*
@@ -78,11 +78,11 @@ pip install -r requirements.txt
 #### POSIX
 
 ```bash
-$ git clone https://github.com/AZO234/screenshot_translator.git
-$ cd screenshot_translator
-$ python -m venv .venv
-$ source .venv/bin/activate
-$ pip install -r requirements.txt
+git clone https://github.com/AZO234/screenshot_translator.git
+cd screenshot_translator
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ### Google API (Optional, for higher accuracy)
@@ -118,8 +118,9 @@ Configure your emulator's periodic screenshot settings to save screenshots to:
 ### Screenshot Translator - Part 2
 
 Launch Screenshot Translator.
+
 ```bash
-$ python main.py
+python main.py
 ```
 
 First, click **Capture only** to verify that the screenshot is being displayed correctly.

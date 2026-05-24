@@ -5,21 +5,17 @@
 周期的なスクリーンショット出力を持つエミュレータ（NP2kaiなど）からスクリーンショットを取得して、
 Google Vision AI API または Tesseract でOCRを行い、Google Cloud Tanslation APIで翻訳するアプリです。
 
-
-
 ## 環境
 
 - Visual Studio 2026 (C++)
 
-- Python3.12 + Pip
+- Python3.13
 
 - [Tsseract](https://github.com/tesseract-ocr/tesseract)
 
 - Google Vision AI API
 
 - Google Cloud Tanslation API
-
-  
 
 ## 準備＆インストール
 
@@ -59,7 +55,7 @@ cd vcpkg
 #### POSIX
 
 ``` bash
-$ sudo apt install tesseract-ocr
+sudo apt install tesseract-ocr
 ```
 
 ※標準の学習データ（`eng.traineddata`, `jpn.traineddata`）はアプリ起動時に自動的に `tessdata/` ディレクトリへダウンロードされます。
@@ -85,11 +81,11 @@ pip install -r requirements.txt
 #### POSIX
 
 ``` bash
-$ git clone https://github.com/AZO234/screenshot_translator.git
-$ cd screenshot_translator
-$ python -m venv .venv
-$ source .venv/bin/activate
-$ pip install -r requirements.txt
+git clone https://github.com/AZO234/screenshot_translator.git
+cd screenshot_translator
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ### Google API （任意、より高精度）
@@ -126,8 +122,9 @@ Screenshot Translator の、imput_screenshots/screen_1.png に、
 ### Screenshot Translator その２
 
 Screenshot Translator を起動します。
+
 ``` bash
-$ python main.py
+python main.py
 ```
 
 まずは、`Capture only` をクリックして、スクリーンショットが表示される事を確認しましょう。
@@ -145,15 +142,11 @@ Google APIの無料枠を消費して、翻訳がオーバレイされれば成�
 
 画像の一部を指定して OCR＆翻訳 させるには、５つまで範囲（ROI）を設定できます。
 
-
-
 ## ライブラリ閲覧
 
 <img src="images/library.png">
 
 保存した翻訳情報は、ライブラリで閲覧することが出来ます。
-
-
 
 ## API無料枠について
 
@@ -168,8 +161,6 @@ Screenshot Translatorでは、
 APIキーごとに、これらの消費状況をカウントします。
 
 Tesseract は無料ですが、標準の辞書では精度が良くないです。
-
-
 
 ## ライセンス
 
