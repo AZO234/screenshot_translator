@@ -213,15 +213,14 @@ class CyclicTranslatorApp(ctk.CTk):
         self.switch_overlay.pack(side="left", padx=10)
 
         ctk.CTkLabel(settings_frame, text="OCR:").pack(side="left", padx=(10, 5))
-        self.ocr_seg = ctk.CTkSegmentedButton(settings_frame, values=["google", "tesseract"], 
+        self.ocr_seg = ctk.CTkSegmentedButton(settings_frame, values=["tesseract", "google"],
                                              command=self.change_ocr_engine)
-        self.ocr_seg.set("google")
+        self.ocr_seg.set("tesseract")
         self.ocr_seg.pack(side="left", padx=5)
 
-        # Tesseractモデル選択
+        # Tesseractモデル選択（デフォルトtesseractなので初期表示する）
         self.tess_model_button = ctk.CTkButton(settings_frame, text="jpn+eng", command=self.show_tess_model_menu, width=80)
-        # 初期状態では非表示にする（OCRがtesseractの時だけ意味があるため）
-        # self.tess_model_button.pack(side="left", padx=5) # あとでchange_ocr_engineで制御
+        self.tess_model_button.pack(side="left", padx=5)
         
         self.tess_model_popup = tk.Menu(self, tearoff=0)
         
@@ -308,7 +307,7 @@ class CyclicTranslatorApp(ctk.CTk):
         def apply_selection():
             selected = [m for m, var in checkboxes.items() if var.get()]
             if not selected:
-                selected = ["jpn"] # デフォルト
+                selected = ["pc98"] if "pc98" in models else ["jpn"]
             new_model_str = "+".join(selected)
             self.selected_tess_model = new_model_str
             self.tess_model_button.configure(text=new_model_str)
